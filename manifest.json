@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Prompt‑Scrubber",
+  "version": "0.1",
+  "description": "Mask secrets & PII in any AI prompt before sending.",
+  "author": "Your Name <you@example.com>",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "<all_urls>"
+      ],
+     "js": [
+        "src/redactor.js",          
+        "src/contentScript.js"      
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "scrub-and-send": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Scrub current prompt (no automatic send)"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
