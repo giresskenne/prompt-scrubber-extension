@@ -18,3 +18,7 @@
  */
 
 /**************** manifest.json ****************/
+
+SCRUBUDY
+
+can you debug this?  AWS key: AKIA1234567890ABCD Stripe secret: sk_test_4eC39HqLyjWDarjtT1zdp7dc User email: alice.smith@example.com Credit card: 4242 4242 4242 4242 Server IP: 10.0.15.23
