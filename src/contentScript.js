@@ -1,9 +1,9 @@
 /*─────────────────────────────────────────────────────────────
-  Prompt-Scrubber  –  contentScript.js  (v0.1.3 Modified)
-  • Injects a “🛡 Scrub & Send” button only after the user starts
-    typing into a textarea / content-editable chat box.
+  Prompt-Scrubber  –  contentScript.js  (v0.1.5)
+  • Injects a “🛡 Scrub” button only after the user starts
+    typing into a textarea / content‑editable chat box.
   • Alt + Shift + S  triggers the same action while focus is inside
-    a non-empty text input.
+    a non‑empty text input.
   • Works with:
       – <textarea> elements (ChatGPT, Stack Overflow)
       – contenteditable="true" or role="textbox" divs (Copilot)
@@ -15,7 +15,12 @@
 
   /* Helper to recognise editable text inputs */
   function isTextInput(el) {
-    return el && (el.tagName === "TEXTAREA" || el.isContentEditable || el.getAttribute("role") === "textbox");
+    return (
+      el &&
+      (el.tagName === "TEXTAREA" ||
+        el.isContentEditable ||
+        el.getAttribute("role") === "textbox")
+    );
   }
 
   /* Minimal toast */
@@ -23,7 +28,7 @@
     const node = Object.assign(document.body.appendChild(document.createElement("div")), {
       textContent: msg,
       style:
-        "position:fixed;bottom:120px;right:24px;padding:8px 12px;background:#111;color:#fff;border-radius:6px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s;"
+        "position:fixed;bottom:120px;right:24px;padding:8px 12px;background:#111;color:#fff;border-radius:6px;font-size:14px;z-index:9999;opacity:0;transition:opacity .3s;",
     });
     requestAnimationFrame(() => (node.style.opacity = "0.9"));
     setTimeout(() => {
@@ -32,7 +37,7 @@
     }, 2000);
   }
 
-  /* ─── INLINE HIGHLIGHTING CODE (Added) ─────────────────── */
+  /* ─── INLINE HIGHLIGHTING CODE ─────────────────────────── */
 
   // Inject CSS for inline highlighting overlay
   function injectHighlightStyles() {
@@ -40,21 +45,18 @@
     const style = document.createElement("style");
     style.id = "psHighlightStyles";
     style.textContent = `
-      .ps-wrapper { 
-        position: relative; 
+      .ps-wrapper{position:relative;}
+      .ps-overlay{
+        position:absolute;top:0;left:0;width:100%;height:100%;
+        pointer-events:none;z-index:3;
+        white-space:pre-wrap;word-break:break-word;
+        font:inherit;line-height:inherit;padding:inherit;
+        color:transparent;               /* hide duplicate glyphs */
       }
-      /* The overlay mirrors the text content and highlights sensitive parts */
-      .ps-overlay {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        pointer-events: none;
-        z-index: 3;
-        white-space: pre-wrap;
-        word-break: break-word;
+      .ps-hl{
+        color:inherit;
+        text-decoration:underline wavy #ff4d6a;
       }
-      /* Underlines sensitive segments with a red wavy line */
-      .ps-hl { text-decoration: underline wavy red; }
     `;
     document.head.appendChild(style);
   }
@@ -62,8 +64,7 @@
 
   // Wrap the element in a container for proper overlay positioning
   function ensureWrapper(el) {
-    if (el.parentNode && el.parentNode.classList && el.parentNode.classList.contains("ps-wrapper"))
-      return el.parentNode;
+    if (el.parentNode?.classList?.contains("ps-wrapper")) return el.parentNode;
     const wrapper = document.createElement("div");
     wrapper.className = "ps-wrapper";
     wrapper.style.position = "relative";
@@ -74,145 +75,166 @@
 
   // Create (or return) the highlighting overlay for contenteditable elements.
   function ensureHighlightOverlay(el) {
-    // Skip inline highlighting for <textarea>
-    if (el.tagName === "TEXTAREA") return null;
+    if (el.tagName === "TEXTAREA") return null; // not needed for textarea
     const wrapper = ensureWrapper(el);
     let overlay = wrapper.querySelector(".ps-overlay");
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.className = "ps-overlay";
       wrapper.appendChild(overlay);
-      // Store a reference on the element (for easier removal later)
       el._highlightOverlay = overlay;
     }
     return overlay;
   }
 
-  // Remove the overlay if it exists.
   function removeHighlightOverlay(el) {
     if (el._highlightOverlay) {
-      el._highlightOverlay.parentNode.removeChild(el._highlightOverlay);
+      el._highlightOverlay.remove();
       delete el._highlightOverlay;
+      el.removeEventListener("scroll", syncScroll);
     }
   }
 
-  // Escape HTML entities so that text is rendered correctly.
-  function escapeHTML(str) {
-    return str.replace(/[&<>"']/g, function (m) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[m];
-    });
-  }
+  // simple HTML‑escape
+  const escapeHTML = (str) =>
+    str.replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 
-  // Dynamically update the overlay’s content to underline sensitive parts.
-  // Using the regex patterns from redactor.js:
-  //  1) AWS key:             /\bAKIA[0-9A-Z]{12,20}\b/g
-  //  2) Generic token:       /\b(?:sk|gh[pous]|gitpat)[-_][A-Za-z0-9]{20,}\b/g
-  //  3) Email:               /[A-Za-z0-9._%+-]+@[^\s@]+\.[A-Za-z]{2,}/g
-  //  4) IPv4:                /\b(?:\d{1,3}\.){3}\d{1,3}\b/g
-  //  5) Credit card:         /\b(?:\d{4}[-\s]?){3}\d{4}\b/g
-  //  6) Stripe key:          /\bsk_(?:live|test)?_[A-Za-z0-9]{24,}\b/g
-  function updateHighlightOverlay(el) {
-    // Only for contenteditable elements.
-    if (el.tagName === "TEXTAREA") return;
-    const overlay = ensureHighlightOverlay(el);
-    if (!overlay) return;
-    const text = el.innerText || "";
-    if (!text.trim()) {
-      overlay.innerHTML = "";
-      return;
-    }
-    // Build a union regex from the redactor.js rules.
-    const regex = new RegExp(
-      [
-        "\\bAKIA[0-9A-Z]{12,20}\\b",
-        "\\b(?:sk|gh[pous]|gitpat)[-_][A-Za-z0-9]{20,}\\b",
-        "[A-Za-z0-9._%+-]+@[^\\s@]+\\.[A-Za-z]{2,}",
-        "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
-        "\\b(?:\\d{4}[-\\s]?){3}\\d{4}\\b",
-        "\\bsk_(?:live|test)?_[A-Za-z0-9]{24,}\\b"
-      ].join("|"),
-      "gi"
-    );
-    let resultHTML = "";
-    let lastIndex = 0;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      resultHTML += escapeHTML(text.substring(lastIndex, match.index));
-      resultHTML += '<span class="ps-hl">' + escapeHTML(match[0]) + "</span>";
-      lastIndex = match.index + match[0].length;
-    }
-    resultHTML += escapeHTML(text.substring(lastIndex));
-    overlay.innerHTML = resultHTML;
-  }
+  // union regex of redactor rules
+  const sensitiveRegex = new RegExp(
+    [
+      "\\bAKIA[0-9A-Z]{12,20}\\b",
+      "\\b(?:sk|gh[pous]|gitpat)[-_][A-Za-z0-9]{20,}\\b",
+      "[A-Za-z0-9._%+-]+@[^\\s@]+\\.[A-Za-z]{2,}",
+      "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+      "\\b(?:\\d{4}[-\\s]?){3}\\d{4}\\b",
+      "\\bsk_(?:live|test)?_[A-Za-z0-9]{24,}\\b",
+    ].join("|"),
+    "gi"
+  );
 
-  /* ─── END INLINE HIGHLIGHTING CODE ───────────────────────── */
-
-  /* Inject button only after first keystroke */
-  let lastActive = null;
-  document.addEventListener("input", e => {
-    if (!isTextInput(e.target)) return;
+  // scroll handler kept outside to remove later
+  function syncScroll(e) {
     const el = e.target;
-    const text = el.tagName === "TEXTAREA" ? el.value : el.innerText;
-    if (text.trim() === "") {
-      // For contenteditable, remove overlay and restore text color.
-      if (el.tagName !== "TEXTAREA") {
-        removeHighlightOverlay(el);
-        el.style.color = "";
+    if (el._highlightOverlay) el._highlightOverlay.scrollTop = el.scrollTop;
+  }
+
+  // overlay updater (debounced via requestAnimationFrame)
+  const updateHighlightOverlay = (() => {
+    let id = 0;
+    return (el) => {
+      if (el.tagName === "TEXTAREA") return;
+      if (id) cancelAnimationFrame(id);
+      id = requestAnimationFrame(() => {
+        const overlay = ensureHighlightOverlay(el);
+        if (!overlay) return;
+        const text = el.innerText || "";
+        if (!text.trim()) {
+          overlay.innerHTML = "";
+          return;
+        }
+        let html = "";
+        let last = 0;
+        let m;
+        sensitiveRegex.lastIndex = 0; // reset
+        while ((m = sensitiveRegex.exec(text))) {
+          html += escapeHTML(text.slice(last, m.index));
+          html += `<span class="ps-hl">${escapeHTML(m[0])}</span>`;
+          last = m.index + m[0].length;
+        }
+        html += escapeHTML(text.slice(last));
+        overlay.innerHTML = html;
+      });
+    };
+  })();
+
+  /* ─── INPUT HANDLER & BUTTON INJECTION ─────────────────── */
+
+  let lastActive = null;
+  document.addEventListener(
+    "input",
+    (e) => {
+      if (!isTextInput(e.target)) return;
+      const el = e.target;
+      const rawText = el.tagName === "TEXTAREA" ? el.value : el.innerText;
+      if (!rawText.trim()) {
+        if (el.tagName !== "TEXTAREA") removeHighlightOverlay(el);
+        return;
       }
-      return;
-    }
-    lastActive = el;
-    // For contenteditable boxes, apply inline highlighting.
-    if (el.tagName !== "TEXTAREA") {
-      // Set the input text to transparent so the overlay shows the highlights.
-      el.style.color = "transparent";
-      el.style.caretColor = "black";
-      updateHighlightOverlay(el);
-    }
-    // Inject the scrub button (only once)
-    if (!document.getElementById("scrubSendBtn")) {
-      const btn = document.createElement("button");
-      btn.id = "scrubSendBtn";
-      btn.type = "button"; // Prevents form submission
-      btn.textContent = "🛡 Scrub";
-      Object.assign(btn.style, { margin: "4px 8px", padding: "4px 8px", fontSize: "12px" });
-      el.parentElement.insertBefore(btn, el.nextSibling);
-      btn.addEventListener("click", () => scrubText(el));
-    }
-  }, true);
+      lastActive = el;
+
+      if (el.tagName !== "TEXTAREA") {
+        updateHighlightOverlay(el);
+        if (!el._scrollSynced) {
+          el.addEventListener("scroll", syncScroll);
+          el._scrollSynced = true;
+        }
+      }
+
+      /* Inject the scrub button (only once) */
+      if (!document.getElementById("scrubSendBtn")) {
+        const btn = document.createElement("button");
+        btn.id = "scrubSendBtn";
+        btn.type = "button";
+        btn.innerHTML = `
+          <img src="${chrome.runtime.getURL("icons/logo.png")}" alt="" width="16" height="16" style="vertical-align:middle;margin-right:4px"> Scrub`;
+
+        Object.assign(btn.style, {
+          margin: "2px 8px",
+          padding: "2px 8px 2px 6px", // ← a hair narrower on the left
+          fontSize: "12px",
+          border: "1px solid #d0d7de",
+          borderRadius: "10px",
+          background: "#fff",
+          cursor: "pointer",
+          transition: "background .15s",
+          display: "inline-flex",       // ⇽ keeps img & text snug
+          alignItems: "center",
+          gap: "4px"
+        });
+
+        btn.addEventListener("mouseover", () => (btn.style.background = "#f6f8fa"));
+        btn.addEventListener("mouseout", () => (btn.style.background = "#fff"));
+
+        el.parentElement.insertBefore(btn, el.nextSibling);
+        btn.addEventListener("click", () => scrubText(el));
+      }
+    },
+    true
+  );
 
   /* Keyboard shortcut */
-  document.addEventListener("keydown", e => {
-    if (e.altKey && e.shiftKey && e.key.toLowerCase() === "s" && lastActive) {
-      e.preventDefault();
-      scrubText(lastActive);
-    }
-  }, true);
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.altKey && e.shiftKey && e.key.toLowerCase() === "s" && lastActive) {
+        e.preventDefault();
+        scrubText(lastActive);
+      }
+    },
+    true
+  );
 
-  /* Core scrub (no send) */
+  /* ─── CORE SCRUB ───────────────────────────────────────── */
+
   function scrubText(target) {
     const raw = target.tagName === "TEXTAREA" ? target.value : target.innerText;
     const { clean, stats } = self.PromptScrubberRedactor.redact(raw);
 
-    // Replace text visibly
     if (target.tagName === "TEXTAREA") {
       const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
       setter.call(target, clean);
       target.dispatchEvent(new Event("input", { bubbles: true }));
     } else {
       target.innerText = clean;
-      target.style.color = "";
     }
 
     const total = Object.values(stats).reduce((a, b) => a + b, 0);
-    const msg = total ? `${total} sensitive items masked` : "No sensitive items detected";
-    toast(msg);
+    toast(total ? `${total} sensitive items masked` : "No sensitive items detected");
 
     console.groupCollapsed("%c[Scrubber] Redaction preview", "color:#0a0");
     console.table(stats);
     console.groupEnd();
 
-    // User can now review & click the site’s own Send button manually.
     removeHighlightOverlay(target);
   }
 })();
