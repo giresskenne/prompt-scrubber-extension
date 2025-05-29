@@ -158,6 +158,12 @@
       const rawText = el.tagName === "TEXTAREA" ? el.value : el.innerText;
       if (!rawText.trim()) {
         if (el.tagName !== "TEXTAREA") removeHighlightOverlay(el);
+          
+        /* drop the button & disable shortcut */
+        const btn = document.getElementById("scrubSendBtn");
+        if (btn) btn.remove();
+        lastActive = null;
+          
         return;
       }
       lastActive = el;
@@ -236,5 +242,12 @@
     console.groupEnd();
 
     removeHighlightOverlay(target);
-  }
+    
+/* remove button & reset shortcut focus */
+    if (!clean.trim()) {
+        const btn = document.getElementById("scrubSendBtn");
+        if (btn) btn.remove();
+        lastActive = null; 
+    }
+}
 })();
