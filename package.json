@@ -1,0 +1,14 @@
+{
+  "name": "prompt-scrubber",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "gen":   "node src/build.mjs",          
+    "build": "npm run gen && webpack"
+  },
+  "devDependencies": {
+    "webpack": "^5.98.0",
+    "webpack-cli": "^5.1.4",
+    "babel-loader": "^9.1.3"
+  }
+}

@@ -1,25 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Prompt‑Scrubber",
+  "name": "Prompt-Scrubber",
   "version": "0.1",
   "description": "Mask secrets & PII in any AI prompt before sending.",
-  "author": "John Doe <john.doe@example.com>",
+  "author": "Giress Kenn <giresskenn@gmail.com>",
   "content_scripts": [
     {
         "matches": [
         "https://chat.openai.com/*",
         "<all_urls>"
       ],
-     "js": [
-        "src/redactor.js",          
-        "src/contentScript.js"      
-      ],
+     "js": ["dist/src/contentScript.js"],
       "run_at": "document_idle"
     }
   ],
+  "background": {
+    "service_worker": "dist/src/bg.js"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
-      "resources": [ "icons/logo.png" ],
+      "resources": [ 
+        "icons/logo.png" ,
+        "src/detectorWorker.js",
+        "src/patterns.json"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

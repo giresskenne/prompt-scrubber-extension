@@ -1,0 +1,50 @@
+{
+  "identifiers": [
+    { "name": "AWS Access Key",
+      "pattern": "(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])",
+      "mask": "AKIA****************",
+      "example": "AKIAIOSFODNN7EXAMPLE"
+    },
+    { "name": "AWS Secret Key",
+      "pattern": "(?<![A-Za-z0-9\\/+=])[A-Za-z0-9\\/+=]{40}(?![A-Za-z0-9\\/+=])"
+    },
+    { "name": "Stripe Secret",
+      "pattern": "(sk_live|sk_test)_[0-9a-zA-Z]{24}",
+      "mask": "$1_********************"
+    },
+    { "name": "Credit Card",
+      "pattern": "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b"
+    },
+    { "name": "Email",
+      "pattern": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}",
+      "flags": "i"
+    },
+    { "name": "IPv4",
+      "pattern": "\\b(?:(?:2(?:5[0-5]|[0-4][0-9])|1?[0-9]{1,2})\\.){3}(?:2(?:5[0-5]|[0-4][0-9])|1?[0-9]{1,2})\\b"
+    },
+    { "name": "Canadian SIN",
+      "pattern": "\\b[0-9]{3}[- ]?[0-9]{3}[- ]?[0-9]{3}\\b"
+    }
+    , { "name": "US Social Security Number",
+      "pattern": "\\b\\d{3}-?\\d{2}-?\\d{4}\\b"
+    },
+    { "name": "US Phone Number",
+      "pattern": "\\b\\(?\\d{3}\\)?[-. ]?\\d{3}[-. ]?\\d{4}\\b"
+    },
+    { "name": "UK National Insurance Number",
+      "pattern": "\\b[A-Z]{2}[0-9]{6}[A-Z]?\\b"
+    },
+    { "name": "UK Passport Number",
+      "pattern": "\\b[A-PR-WY][0-9]{7}\\b"
+    },
+    { "name": "UK NHS Number",
+      "pattern": "\\b[0-9]{3} [0-9]{3} [0-9]{3}\\b"
+    },
+    { "name": "UK Driving License Number",
+      "pattern": "\\b[A-Z]{2}[0-9]{6}[A-Z]?\\b"
+    },
+    { "name": "UK Bank Account Number",
+      "pattern": "\\b[0-9]{8}\\b"
+    }
+  ]
+}
