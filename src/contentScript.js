@@ -220,7 +220,7 @@ function detectSensitive(text) {
 
          /* remove the Scrub button when no text */
         const b = document.getElementById("scrubSendBtn");
-        if (b) b.remove();
+        if (b) b.remove();      
         return;
       }
       lastActive = el;
@@ -305,5 +305,12 @@ function detectSensitive(text) {
     console.groupEnd();
 
     removeHighlightOverlay(target);
-  }
+    
+/* remove button & reset shortcut focus */
+    if (!clean.trim()) {
+        const btn = document.getElementById("scrubSendBtn");
+        if (btn) btn.remove();
+        lastActive = null; 
+    }
+}
 })();
