@@ -1,5 +1,5 @@
 
- * Prompt‑Scrubber — v0.1 MVP
+ * Prompt‑Scrubber — v0.2.0 MVP
  * A minimal Chrome/Edge/Firefox extension that masks secrets/PII inside the ChatGPT prompt box
  * before dispatching the message. 100 % client‑side, pure regex, no external services.
  *
@@ -47,3 +47,5 @@ Internal IP:         192.168.1.100
 Canadian SIN:        123-456-789
 
 End of test.
+
+
