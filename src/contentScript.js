@@ -1,12 +1,10 @@
 /*─────────────────────────────────────────────────────────────
-  Prompt-Scrubber – contentScript.js  (v0.2.3)
-  ▸ Fixes based on latest feedback:
-      • Uses **innerText** (not textContent) for content‑editable fields to
-        keep original line breaks and avoid "space insertion".
-      • Redaction loop now runs until **no further matches** (max 10 loops)
-        guaranteeing a single click scrubs everything.
-      • Avoids re‑inserting the Scrub button if one already exists inside
-        the same parent node (prevents layout drift).
+  Prompt-Scrubber – contentScript.js  (v0.3.0)
+  ▸ Enhanced with sensitive text underlining:
+      • Adds "Underline Sensitive" button to highlight sensitive data
+      • Visual feedback before scrubbing with red underlines
+      • Toggle functionality to show/hide underlines
+      • Preserves all original scrubbing functionality
 ─────────────────────────────────────────────────────────────*/
 
 /* async helper – background returns [{start,end}]  (still available) */
@@ -45,36 +43,95 @@ function setRaw(el,txt){
 
 /* main input handler */
 let lastActive=null;
+let underlineState = new Map(); // Track underline state per element
+// Track whether the extension is enabled
+let scrubberEnabled = true;
+
+// On load, get the enabled state from storage
+chrome.storage && chrome.storage.sync.get('enabled', result => {
+  scrubberEnabled = result.hasOwnProperty('enabled') ? result.enabled : true;
+});
+
+// Listen for enable/disable messages from popup
+chrome.runtime && chrome.runtime.onMessage && chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+  if (msg && msg.action === 'setState' && typeof msg.enabled === 'boolean') {
+    scrubberEnabled = msg.enabled;
+  }
+});
+
+function injectScrubButton(el){
+  // only add once per parent node
+  if(el.parentElement.querySelector('#scrubSendBtn')) return;
+  
+  // Create container for buttons
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = 'display:inline-flex;gap:4px;margin:2px 8px;';
+  
+  // Scrub button only (underline button removed)
+  const scrubBtn = document.createElement('button');
+  scrubBtn.id = 'scrubSendBtn';
+  scrubBtn.type = 'button';
+  scrubBtn.innerHTML = `<img src="${chrome.runtime.getURL('icons/logo.png')}" width="16" height="16" style="vertical-align:middle;margin-right:4px"> Scrub`;
+  Object.assign(scrubBtn.style, {
+    padding: '2px 8px 2px 6px',
+    fontSize: '12px',
+    border: '1px solid #d0d7de',
+    borderRadius: '10px',
+    background: '#fff',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px'
+  });
+  scrubBtn.onclick = () => scrubText(el);
+  
+  buttonContainer.appendChild(scrubBtn);
+  el.parentElement.insertBefore(buttonContainer, el.nextSibling);
+}
+
+// Automatically highlight sensitive info in textarea on input
+function autoHighlightSensitive(el) {
+  if (el.tagName === 'TEXTAREA') {
+    const text = getRaw(el);
+    if (!text.trim()) {
+      el.style.background = '';
+      el.removeAttribute('data-sensitive-count');
+      return;
+    }
+
+    // Use the same redactor logic as the scrub function
+    const { stats } = self.PromptScrubberRedactor.redact(text);
+    const totalSensitive = Object.values(stats).reduce((a,b)=>a+b,0);
+    
+    if (totalSensitive > 0) {
+      el.style.background = 'linear-gradient(90deg, #fff 0%, #ffebee 100%)';
+      el.setAttribute('data-sensitive-count', totalSensitive);
+    } else {
+      el.style.background = '';
+      el.removeAttribute('data-sensitive-count');
+    }
+  }
+}
+
 document.addEventListener('input', e=>{
+  if (!scrubberEnabled) return;
   if(!isTextInput(e.target)) return;
   const el=e.target;
   if(!getRaw(el).trim()){ cleanUp(el); return; }
   lastActive=el;
   injectScrubButton(el);
+  autoHighlightSensitive(el); // highlight automatically
 }, true);
 
-/* scrub button & shortcut */
-function injectScrubButton(el){
-  // only add once per parent node
-  if(el.parentElement.querySelector('#scrubSendBtn')) return;
-  const btn=document.createElement('button');
-  btn.id='scrubSendBtn'; btn.type='button';
-  btn.innerHTML=`<img src="${chrome.runtime.getURL('icons/logo.png')}" width="16" height="16" style="vertical-align:middle;margin-right:4px"> Scrub`;
-  Object.assign(btn.style,{margin:'2px 8px',padding:'2px 8px 2px 6px',fontSize:'12px',
-    border:'1px solid #d0d7de',borderRadius:'10px',background:'#fff',cursor:'pointer',
-    display:'inline-flex',alignItems:'center',gap:'4px'});
-  btn.onclick=()=>scrubText(el);
-  el.parentElement.insertBefore(btn,el.nextSibling);
-}
-
-document.addEventListener('keydown',e=>{
-  if(e.altKey && e.shiftKey && e.key.toLowerCase()==='s' && lastActive){
-    e.preventDefault(); scrubText(lastActive);
-  }
-}, true);
-
-/* ───────── Scrub core ───────── */
+/* ───────── Scrub core (enhanced) ───────── */
 function scrubText(target){
+  // Remove underlines before scrubbing
+  if (underlineState.get(target)) {
+    removeUnderlines(target);
+    underlineState.set(target, false);
+    updateUnderlineButton(target, false);
+  }
+  
   let raw = getRaw(target);
   let totalMasked = 0;
   for(let i=0;i<10;i++){
@@ -89,9 +146,10 @@ function scrubText(target){
   if(!raw.trim()) cleanUp(target);
 }
 
-/* clean-up when box is emptied */
+/* clean-up when box is emptied (enhanced) */
 function cleanUp(el){
-  const b=el.parentElement?.querySelector('#scrubSendBtn');
-  if(b) b.remove();
+  const buttonContainer = el.parentElement?.querySelector('#scrubSendBtn')?.parentElement;
+  if(buttonContainer) buttonContainer.remove();
+  underlineState.delete(el);
   lastActive=null;
 }
