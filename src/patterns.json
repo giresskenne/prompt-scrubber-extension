@@ -9,11 +9,11 @@
       "pattern": "(?<![A-Za-z0-9\\/+=])[A-Za-z0-9\\/+=]{40}(?![A-Za-z0-9\\/+=])"
     },
     { "name": "Stripe Secret",
-      "pattern": "(sk_live|sk_test)_[0-9a-zA-Z]{24}",
-      "mask": "$1_********************"
+      "pattern": "(?:sk[-_](?:live|test)[-_]?[A-Za-z0-9]{20,})",
+      "mask": "sk_********************"
     },
     { "name": "Credit Card",
-      "pattern": "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b"
+      "pattern": "\\b(?:4\\d{3}(?:[- ]?\\d{4}){3}|(?:5[1-5]\\d{2}|22[2-9]\\d|2[3-6]\\d{2}|27[01]\\d|2720)(?:[- ]?\\d{4}){3}|3[47]\\d{2}[- ]?\\d{6}[- ]?\\d{5}|6(?:011|5\\d{2})(?:[- ]?\\d{4}){3})\\b"
     },
     { "name": "Email",
       "pattern": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}",
@@ -24,8 +24,8 @@
     },
     { "name": "Canadian SIN",
       "pattern": "\\b[0-9]{3}[- ]?[0-9]{3}[- ]?[0-9]{3}\\b"
-    }
-    , { "name": "US Social Security Number",
+    },
+    { "name": "US Social Security Number",
       "pattern": "\\b\\d{3}-?\\d{2}-?\\d{4}\\b"
     },
     { "name": "US Phone Number",
@@ -45,6 +45,35 @@
     },
     { "name": "UK Bank Account Number",
       "pattern": "\\b[0-9]{8}\\b"
+    },
+
+
+
+    { "name": "Password (key=value)",
+      "pattern": "(?:password|passwd|pwd|pass)\\s*=\\s*[^\\s,;]+",
+      "flags": "i"
+    },
+    { "name": "CVV",
+      "pattern": "\\bcvv\\s*=\\s*\\d{3,4}\\b",
+      "flags": "i"
+    },
+    { "name": "Card Expiry",
+      "pattern": "\\bexpiry\\s*=\\s*(0[1-9]|1[0-2])/(\\d{2}|\\d{4})\\b",
+      "flags": "i"
+    },
+    { "name": "Currency Amount",
+      "pattern": "\\$\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?"
+    },
+    { "name": "JDBC URL with Credentials",
+      "pattern": "jdbc:[^?\\s]+\\?[^\\s]*(?:user|username|uid)=[^&\\s]+&(?:password|pwd)=[^&\\s]+",
+      "flags": "i"
+    },
+    { "name": "Generic Secret / API Token",
+      "pattern": "(?:api[_-]?key|secret|token|access[_-]?key)\\s*=\\s*[^\\s,;]+",
+      "flags": "i"
+    },
+    { "name": "JWT",
+      "pattern": "ey[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9._-]{10,}\\.[A-Za-z0-9._-]{10,}"
     }
   ]
 }

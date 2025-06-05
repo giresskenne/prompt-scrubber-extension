@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt-Scrubber</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <img src="../icons/logo.png" alt="Security shield icon with alert symbol, representing active protection status for the Prompt-Scrubber extension" width="24" height="24" class="lucide lucide-shield-alert">
+        <h1>Prompt-Scrubber</h1>
+      </div>
+    </header>
+    
+    <main>
+      <div class="status">
+        <p>Automatically masks sensitive information in text fields</p>
+      </div>
+      
+      <div class="toggle-container">
+        <label for="toggle" class="toggle-label">
+          <span>Protection</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="toggle" checked>
+            <span class="slider"></span>
+          </div>
+          <span id="toggle-status">Enabled</span>
+        </label>
+      </div>
+      
+      <div class="protection-info">
+        <h2>Protected Patterns:</h2>
+        <ul>
+          <li>API Keys (AWS, OpenAI)</li>
+          <li>Auth Tokens</li>
+          <li>Email Addresses</li>
+          <li>Credit Card Numbers</li>
+        </ul>
+      </div>
+    </main>
+    
+    <footer>
+      <p>Version 1.0</p>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

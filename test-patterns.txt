@@ -1,0 +1,52 @@
+2025-06-02T14:07:55Z 203.0.113.42 GET /api/v1/profile/123 500
+2025-06-02T14:07:55Z ERROR[web]: Unhandled Exception → java.lang.NullPointerException: userId=123-456-789, email=jane.doe@example.com
+	at com.acme.portal.ProfileService.handle(ProfileService.java:88)
+
+{
+  "user": {
+    "id": "u-98431",
+    "name": "Jane Doe",
+    "ssn": "987-65-4321",
+    "email": "jane.doe@example.com",
+    "phone": "+1-415-555-0199",
+    "address": "742 Evergreen Terrace, Springfield, IL 62704"
+  },
+  "payment": {
+    "cardNumber": "4111-1111-1111-1111",
+    "expiry": "11/27",
+    "cvv": "123"
+  }
+}
+
+botocore.exceptions.ClientError: An error occurred (AccessDenied) when calling the PutObject operation:
+aws_access_key_id="AKIAIOSFODNN7EXAMPLE"
+aws_secret_access_key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+{
+  "id": "evt_1Px9BBA7g6Q9CmrwWjhcD2QD",
+  "api_version": "2024-08-01",
+  "type": "payment_intent.payment_failed",
+  "data": {
+    "object": {
+      "client_secret": "pi_3Px98bA7g6Q9Cmrw1WHP57Io_secret_tp5RPz9f1srmy4Mh4kfq50VtQ",
+      "metadata": {
+        "customer_email": "john.smith@corp-example.ca"
+      }
+    }
+  }
+}
+
+panic: runtime error: invalid memory address
+goroutine 1 [running]:
+main.main()
+	/home/runner/work/backend/auth/main.go:42 +0x2f5
+ENV[DB_URL]=postgres://acme_admin:Sup3rS3cretP@10.1.2.13:5432/acme_db?sslmode=require
+ENV[SENDGRID_API_KEY]=SG.p5wI1E4KQe2B-6wxYo7vTw.fHzWN-Q6ZzqvE8oQKjwcF3D3XY-HdP4dS23jYqjV7Q
+
+2025-06-02 10:09:27.119  ERROR  com.acme.app  DeviceID=fae5-9b4c-488f-3401
+Auth token (JWT): eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIyZTQzZTdkYiIsImV4cCI6MTcxNzM5MDY1M30.TCyH6TMAaBfqHPnl455D0svCyG-GtbZN3TbfaW-sJ6o
+GPS: lat=45.4215, lon=-75.6972
+
+Jun  2 14:08:01 prod-app-01 sudo: pam_unix(sudo:session): session closed for user root
+Jun  2 14:08:15 prod-app-01 sshd[22544]: Connection from 192.168.10.55 port 55234 on 203.0.113.42 port 22
+Jun  2 14:08:16 prod-app-01 sshd[22544]: Accepted publickey for ec2-user from 192.168.10.55 port 55234

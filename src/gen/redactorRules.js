@@ -12,14 +12,12 @@ export const rules = [
   },
   {
     id: "stripe_secret",
-    pattern: new RegExp("(sk_live|sk_test)_[0-9a-zA-Z]{24}", "g"),
-    replacer: (m,...g)=>"$1_********************"
-        .replace('$&',m)
-        .replace(/\$(\d)/g,(_,i)=>g[i-1]||'')
+    pattern: new RegExp("(?:sk[-_](?:live|test)[-_]?[A-Za-z0-9]{20,})", "g"),
+    replacer: () => "sk_********************"
   },
   {
     id: "credit_card",
-    pattern: new RegExp("\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b", "g"),
+    pattern: new RegExp("\\b(?:4\\d{3}(?:[- ]?\\d{4}){3}|(?:5[1-5]\\d{2}|22[2-9]\\d|2[3-6]\\d{2}|27[01]\\d|2720)(?:[- ]?\\d{4}){3}|3[47]\\d{2}[- ]?\\d{6}[- ]?\\d{5}|6(?:011|5\\d{2})(?:[- ]?\\d{4}){3})\\b", "g"),
     replacer: () => "<CREDIT_CARD-REDACTED>"
   },
   {
@@ -71,5 +69,40 @@ export const rules = [
     id: "uk_bank_account_number",
     pattern: new RegExp("\\b[0-9]{8}\\b", "g"),
     replacer: () => "<UK_BANK_ACCOUNT_NUMBER-REDACTED>"
+  },
+  {
+    id: "password_(key=value)",
+    pattern: new RegExp("(?:password|passwd|pwd|pass)\\s*=\\s*[^\\s,;]+", "i"),
+    replacer: () => "<PASSWORD_(KEY=VALUE)-REDACTED>"
+  },
+  {
+    id: "cvv",
+    pattern: new RegExp("\\bcvv\\s*=\\s*\\d{3,4}\\b", "i"),
+    replacer: () => "<CVV-REDACTED>"
+  },
+  {
+    id: "card_expiry",
+    pattern: new RegExp("\\bexpiry\\s*=\\s*(0[1-9]|1[0-2])/(\\d{2}|\\d{4})\\b", "i"),
+    replacer: () => "<CARD_EXPIRY-REDACTED>"
+  },
+  {
+    id: "currency_amount",
+    pattern: new RegExp("\\$\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?", "g"),
+    replacer: () => "<CURRENCY_AMOUNT-REDACTED>"
+  },
+  {
+    id: "jdbc_url_with_credentials",
+    pattern: new RegExp("jdbc:[^?\\s]+\\?[^\\s]*(?:user|username|uid)=[^&\\s]+&(?:password|pwd)=[^&\\s]+", "i"),
+    replacer: () => "<JDBC_URL_WITH_CREDENTIALS-REDACTED>"
+  },
+  {
+    id: "generic_secret_/_api_token",
+    pattern: new RegExp("(?:api[_-]?key|secret|token|access[_-]?key)\\s*=\\s*[^\\s,;]+", "i"),
+    replacer: () => "<GENERIC_SECRET_/_API_TOKEN-REDACTED>"
+  },
+  {
+    id: "jwt",
+    pattern: new RegExp("ey[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9._-]{10,}\\.[A-Za-z0-9._-]{10,}", "g"),
+    replacer: () => "<JWT-REDACTED>"
   }
 ];
